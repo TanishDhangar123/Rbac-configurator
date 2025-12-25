@@ -13,6 +13,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, password } = loginSchema.parse(body)
 
+    // Verify environment variables
+    if (!process.env.DATABASE_URL) {
+      console.error('DATABASE_URL is not set')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
@@ -44,9 +53,11 @@ export async function POST(request: NextRequest) {
     )
 
     // Set HTTP-only cookie
+    // On Vercel, always use secure cookies (HTTPS)
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL
     response.cookies.set('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProduction, // Use secure cookies on Vercel (HTTPS)
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: '/',
@@ -65,8 +76,15 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Login error:', error)
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)))
+    
+    // Don't expose internal error details in production
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? (error instanceof Error ? error.message : 'Unknown error')
+      : 'Internal server error'
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
