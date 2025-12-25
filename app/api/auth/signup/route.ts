@@ -10,6 +10,15 @@ const signupSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify environment variables
+    if (!process.env.DATABASE_URL) {
+      console.error('DATABASE_URL is not set')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
     const body = await request.json()
     const { email, password } = signupSchema.parse(body)
 
@@ -63,8 +72,15 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Signup error:', error)
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)))
+    
+    // Don't expose internal error details in production
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? (error instanceof Error ? error.message : 'Unknown error')
+      : 'Internal server error'
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
