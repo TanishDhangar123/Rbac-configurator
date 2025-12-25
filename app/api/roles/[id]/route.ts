@@ -10,16 +10,17 @@ const updateRoleSchema = z.object({
 // GET single role
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = request.cookies.get('token')?.value
     if (!token || !verifyToken(token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const role = await prisma.role.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         role_permissions: {
           include: {
@@ -49,9 +50,10 @@ export async function GET(
 // PUT update role
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = request.cookies.get('token')?.value
     if (!token || !verifyToken(token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -61,7 +63,7 @@ export async function PUT(
     const { name } = updateRoleSchema.parse(body)
 
     const role = await prisma.role.update({
-      where: { id: params.id },
+      where: { id },
       data: { name },
     })
 
@@ -92,16 +94,17 @@ export async function PUT(
 // DELETE role
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = request.cookies.get('token')?.value
     if (!token || !verifyToken(token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     await prisma.role.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({ message: 'Role deleted successfully' })

@@ -11,16 +11,17 @@ const updatePermissionSchema = z.object({
 // GET single permission
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = request.cookies.get('token')?.value
     if (!token || !verifyToken(token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const permission = await prisma.permission.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         role_permissions: {
           include: {
@@ -50,9 +51,10 @@ export async function GET(
 // PUT update permission
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = request.cookies.get('token')?.value
     if (!token || !verifyToken(token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -62,7 +64,7 @@ export async function PUT(
     const data = updatePermissionSchema.parse(body)
 
     const permission = await prisma.permission.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...data,
         description: data.description === undefined ? undefined : (data.description || null),
@@ -96,16 +98,17 @@ export async function PUT(
 // DELETE permission
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = request.cookies.get('token')?.value
     if (!token || !verifyToken(token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     await prisma.permission.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({ message: 'Permission deleted successfully' })

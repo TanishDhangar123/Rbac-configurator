@@ -10,16 +10,17 @@ const updatePermissionsSchema = z.object({
 // GET permissions for a role
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = request.cookies.get('token')?.value
     if (!token || !verifyToken(token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const role = await prisma.role.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         role_permissions: {
           include: {
@@ -51,9 +52,10 @@ export async function GET(
 // PUT update permissions for a role
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = request.cookies.get('token')?.value
     if (!token || !verifyToken(token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -64,7 +66,7 @@ export async function PUT(
 
     // Verify role exists
     const role = await prisma.role.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!role) {
@@ -94,13 +96,13 @@ export async function PUT(
 
     // Delete existing role_permissions and create new ones
     await prisma.rolePermission.deleteMany({
-      where: { role_id: params.id },
+      where: { role_id: id },
     })
 
     if (permissionIds.length > 0) {
       await prisma.rolePermission.createMany({
         data: permissionIds.map((permissionId) => ({
-          role_id: params.id,
+          role_id: id,
           permission_id: permissionId,
         })),
       })
@@ -108,7 +110,7 @@ export async function PUT(
 
     // Fetch updated role with permissions
     const updatedRole = await prisma.role.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         role_permissions: {
           include: {

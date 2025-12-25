@@ -5,16 +5,17 @@ import { verifyToken } from '@/lib/auth'
 // GET roles for a permission
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = request.cookies.get('token')?.value
     if (!token || !verifyToken(token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const permission = await prisma.permission.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         role_permissions: {
           include: {
