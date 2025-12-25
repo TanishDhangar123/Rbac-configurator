@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     // Set HTTP-only cookie
     // On Vercel, always use secure cookies (HTTPS)
-    const isProduction = process.env.NODE_ENV === 'production' || !!process.env.VERCEL
+    const isProduction: boolean = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL)
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: isProduction, // Use secure cookies on Vercel (HTTPS)
